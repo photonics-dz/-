@@ -1,0 +1,193 @@
+# -*- coding: utf-8 -*-
+
+"""
+温馨提示弹窗程序
+
+功能：
+1. 在屏幕随机位置快速创建温馨提示窗口。
+2. 最多创建 150 个窗口。
+3. 程序运行 15 秒后自动关闭所有窗口。
+4. 运行期间按 Esc 键可以提前退出。
+
+运行环境：
+Python 3 + Tkinter
+"""
+
+import random
+import time
+import tkinter as tk
+
+
+# ==================== 程序设置 ====================
+
+WINDOW_COUNT = 150
+CREATE_INTERVAL_MS = 20
+RUN_SECONDS = 15
+
+WINDOW_WIDTH = 280
+WINDOW_HEIGHT = 90
+
+
+# ==================== 提示内容 ====================
+
+TIPS = [
+    "多喝水哦~",
+    "保持微笑呀",
+    "每天都要元气满满",
+    "记得吃水果",
+    "保持好心情",
+    "好好爱自己",
+    "我想你了",
+    "梦想成真",
+    "期待下一次见面",
+    "金榜题名",
+    "顺顺利利",
+    "早点休息",
+    "愿所有烦恼都消失",
+    "别熬夜",
+    "今天过得开心嘛",
+    "天冷了，多穿衣服",
+]
+
+
+# ==================== 背景颜色 ====================
+
+BG_COLORS = [
+    "lightpink",
+    "skyblue",
+    "lightgreen",
+    "lavender",
+    "lightyellow",
+    "plum",
+    "coral",
+    "bisque",
+    "aquamarine",
+    "mistyrose",
+    "honeydew",
+    "lavenderblush",
+    "oldlace",
+]
+
+
+def main():
+    """启动温馨提示弹窗程序。"""
+
+    root = tk.Tk()
+    root.withdraw()
+
+    windows = []
+    created_count = 0
+    stopped = False
+    start_time = time.monotonic()
+
+    screen_width = root.winfo_screenwidth()
+    screen_height = root.winfo_screenheight()
+
+    def create_tip_window():
+        """在屏幕随机位置创建一个提示窗口。"""
+
+        max_x = max(0, screen_width - WINDOW_WIDTH)
+        max_y = max(0, screen_height - WINDOW_HEIGHT)
+
+        x = random.randint(0, max_x)
+        y = random.randint(0, max_y)
+
+        window = tk.Toplevel(root)
+        window.title("温馨提示")
+        window.geometry(
+            f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}+{x}+{y}"
+        )
+        window.resizable(False, False)
+
+        tip = random.choice(TIPS)
+        background = random.choice(BG_COLORS)
+
+        window.configure(bg=background)
+
+        label = tk.Label(
+            window,
+            text=tip,
+            bg=background,
+            font=("PingFang SC", 16),
+            padx=10,
+            pady=10,
+        )
+        label.pack(fill="both", expand=True)
+
+        # 让窗口显示在最前面
+        window.attributes("-topmost", True)
+        window.lift()
+
+        windows.append(window)
+
+    def create_next_window():
+        """按照设定的时间间隔创建下一个窗口。"""
+
+        nonlocal created_count
+
+        if stopped:
+            return
+
+        elapsed_time = time.monotonic() - start_time
+
+        if elapsed_time >= RUN_SECONDS:
+            close_all_windows()
+            return
+
+        if created_count >= WINDOW_COUNT:
+            return
+
+        create_tip_window()
+        created_count += 1
+
+        root.after(
+            CREATE_INTERVAL_MS,
+            create_next_window,
+        )
+
+    def close_all_windows():
+        """关闭所有提示窗口并结束程序。"""
+
+        nonlocal stopped
+
+        if stopped:
+            return
+
+        stopped = True
+
+        for window in windows:
+            try:
+                window.destroy()
+            except tk.TclError:
+                pass
+
+        windows.clear()
+
+        try:
+            root.destroy()
+        except tk.TclError:
+            pass
+
+    # 按 Esc 键可提前关闭全部窗口
+    root.bind_all(
+        "<Escape>",
+        lambda event: close_all_windows(),
+    )
+
+    # 开始创建弹窗
+    root.after(0, create_next_window)
+
+    # 15 秒后强制关闭全部窗口
+    root.after(
+        RUN_SECONDS * 1000,
+        close_all_windows,
+    )
+
+    root.mainloop()
+
+    print(f"共创建了 {created_count} 个窗口")
+    print("所有窗口均已关闭，程序结束")
+
+
+if __name__ == "__main__":
+    main()
